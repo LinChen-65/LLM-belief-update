@@ -17,32 +17,24 @@ The project studies whether large language models make belief-update judgments i
 
 ## Requirements
 
-The code was tested with the following Python packages:
+The code is written in Python. The main scripts use the following packages:
 
-| Package | Version |
-| --- | --- |
-| `matplotlib` | `3.10.5` |
-| `modelscope` | `1.26.0` |
-| `nltk` | `3.9.2` |
-| `numpy` | `2.2.6` |
-| `openpyxl` | `3.1.5` |
-| `pandas` | `2.2.3` |
-| `scikit-learn` | `1.7.1` |
-| `scipy` | `1.15.3` |
-| `seaborn` | `0.13.2` |
-| `spacy` | `3.8.11` |
-| `statsmodels` | `0.14.5` |
-| `torch` | `2.6.0` |
-| `transformers` | `4.51.3` |
-| `wordcloud` | `1.9.6` |
+| Package | Version | Purpose |
+| --- | --- | --- |
+| `openai` | Not specified in the reference README | API calls to OpenAI-compatible and Azure OpenAI endpoints |
+| `httpx` | Not specified in the reference README | API timeout and HTTP configuration |
+| `numpy` | `2.2.6` | numerical computation |
+| `pandas` | `2.2.3` | data processing and tabulation |
+| `matplotlib` | `3.10.5` | plotting figures |
+| `scikit-learn` | `1.7.1` | metrics such as Cohen's kappa |
+| `scipy` | `1.15.3` | statistical analysis |
+| `statsmodels` | `0.14.5` | regression analysis |
 
-Download the spaCy English model with:
+install the core packages with:
 
 ```bash
-python -m spacy download en_core_web_sm
+pip install openai httpx numpy pandas matplotlib scikit-learn scipy statsmodels
 ```
-
-The word-cloud script also uses the NLTK WordNet corpus.
 
 ## Data
 
@@ -86,3 +78,4 @@ The exact variables required may differ by script depending on whether it uses A
 - Large raw datasets and generated result files should be kept in `src/dataset/` and `results/` rather than mixed with core code.
 - Do not commit API keys, passwords, local environment files, or private credentials.
 - If results are regenerated, place them in the corresponding subfolder under `results/` so that each experiment remains easy to locate.
+
