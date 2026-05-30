@@ -17,30 +17,32 @@ The project studies whether large language models make belief-update judgments i
 
 ## Requirements
 
-The code is written in Python. The main scripts use the following packages:
+The code was tested with the following Python packages:
 
-| Package | Purpose |
+| Package | Version |
 | --- | --- |
-| `openai` | API calls to OpenAI-compatible and Azure OpenAI endpoints |
-| `httpx` | API timeout and HTTP configuration |
-| `numpy` | numerical computation |
-| `pandas` | data processing and tabulation |
-| `matplotlib` | plotting figures |
-| `scikit-learn` | metrics such as Cohen's kappa |
-| `scipy` | statistical analysis |
-| `statsmodels` | regression analysis |
+| `matplotlib` | `3.10.5` |
+| `modelscope` | `1.26.0` |
+| `nltk` | `3.9.2` |
+| `numpy` | `2.2.6` |
+| `openpyxl` | `3.1.5` |
+| `pandas` | `2.2.3` |
+| `scikit-learn` | `1.7.1` |
+| `scipy` | `1.15.3` |
+| `seaborn` | `0.13.2` |
+| `spacy` | `3.8.11` |
+| `statsmodels` | `0.14.5` |
+| `torch` | `2.6.0` |
+| `transformers` | `4.51.3` |
+| `wordcloud` | `1.9.6` |
 
-Install dependencies with:
+Download the spaCy English model with:
 
 ```bash
-pip install -r requirements.txt
+python -m spacy download en_core_web_sm
 ```
 
-If no `requirements.txt` is provided, install the core packages with:
-
-```bash
-pip install openai httpx numpy pandas matplotlib scikit-learn scipy statsmodels
-```
+The word-cloud script also uses the NLTK WordNet corpus.
 
 ## Data
 
