@@ -21,8 +21,8 @@ The code is written in Python. The main scripts use the following packages:
 
 | Package | Version | Purpose |
 | --- | --- | --- |
-| `openai` | Not specified in the reference README | API calls to OpenAI-compatible and Azure OpenAI endpoints |
-| `httpx` | Not specified in the reference README | API timeout and HTTP configuration |
+| `openai` | 2.14.0 | API calls to OpenAI-compatible and Azure OpenAI endpoints |
+| `httpx` | 0.28.1 | API timeout and HTTP configuration |
 | `numpy` | `2.2.6` | numerical computation |
 | `pandas` | `2.2.3` | data processing and tabulation |
 | `matplotlib` | `3.10.5` | plotting figures |
@@ -172,9 +172,5 @@ export AZURE_OPENAI_ENDPOINT="your_azure_endpoint"
 ```
 
 The exact environment variables required may differ by script depending on whether it uses SiliconFlow, OpenRouter, Azure OpenAI, or another OpenAI-compatible endpoint.
-## Notes
 
-- Large raw datasets and generated result files should be kept in `src/dataset/` and `results/` rather than mixed with core code.
-- Do not commit API keys, passwords, local environment files, or private credentials.
-- If results are regenerated, place them in the corresponding subfolder under `results/` so that each experiment remains easy to locate.
 
