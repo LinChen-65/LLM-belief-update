@@ -1,509 +1,662 @@
+import argparse
+import csv
+import glob
 import json
+import math
 import os
-import numpy as np
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
-from scipy.stats import norm
-from sklearn.metrics import confusion_matrix
-from statsmodels.stats.proportion import proportions_ztest
+import re
+import time
+from collections import defaultdict
+from typing import Dict, Any, List, Optional, Tuple
+
+from openai import AzureOpenAI
 
 # ==========================================
-# 1. 配置文件路径
+# 1. 基础配置与文件路径
 # ==========================================
-TOPIC_FILE = '/data7/chenyitong/Winning_Arguments/topic_classification_results.json'
+# 原帖文件
+OPS_FILE = "/data7/chenyitong/Winning_Arguments/2262_unique_ops.json"
+# 回复对文件
+PAIRS_FILE = "/data7/chenyitong/Winning_Arguments/single_turn_pairs.json"
 
-MODEL_FILES = {
-    "DeepSeek-V3": "/data7/chenyitong/Winning_Arguments/final_v3_results_observer_deepseek-ai_DeepSeek-V3.json",
-    "Gemini-2.5-Flash": "/data7/chenyitong/Winning_Arguments/final_v3_results_observer_google_gemini-2.5-flash-lite.json",
-    "GPT-4o-mini": "/data7/chenyitong/Winning_Arguments/final_v3_results_observer_openai_gpt-4o-mini.json",
-    "MiniMax-M2.5": "/data7/chenyitong/Winning_Arguments/final_v3_results_observer_MiniMaxAI_MiniMax-M2.5.json",
-    "GLM-4.7": "/data7/chenyitong/Winning_Arguments/final_v3_results_observer_zai-org_GLM-4.7.json",
-    "Qwen-32B": "/data7/chenyitong/Winning_Arguments/final_v3_results_observer_Qwen_Qwen2.5-32B-Instruct.json",
-    "Qwen-72B": "/data7/chenyitong/Winning_Arguments/final_v3_results_observer_Qwen_Qwen2.5-72B-Instruct.json"
-}
+# 话题类型标注输出文件
+TOPIC_OUTPUT_FILE = "/data7/chenyitong/Winning_Arguments/2262_unique_ops_with_proposition_types.json"
 
-OUTPUT_DIR = "/data7/chenyitong/Winning_Arguments/final_v3_Experiment_Analysis_Results/observer_Topic_Analysis"
-os.makedirs(OUTPUT_DIR, exist_ok=True)
+# LLM pointwise 结果文件所在目录
+RESULTS_DIR = "/data7/chenyitong/Winning_Arguments"
+# 默认分析第一人称 pointwise 结果；如需分析第三人称，可用命令行传入 --results-glob "final_v3_results_observer_*.json"
+RESULTS_GLOB = "final_v3_results_*.json"
 
-plt.rcParams['font.sans-serif'] = ['Arial', 'DejaVu Sans', 'SimHei']
-plt.rcParams['axes.unicode_minus'] = False
+# 分析结果输出目录
+ANALYSIS_OUTPUT_DIR = "/data7/chenyitong/Winning_Arguments/topic_bias_analysis"
 
-# ==========================================
-# 2. 核心统计学函数与显著性检验
-# ==========================================
-def calculate_kappa_and_se(y_true, y_pred):
-    cm = confusion_matrix(y_true, y_pred, labels=[0, 1])
-    if cm.shape != (2, 2):
-        return 0.0, 0.0
-    n = np.sum(cm)
-    if n == 0:
-        return 0.0, 0.0
-    p0 = np.sum(np.diag(cm)) / n
-    p_e = np.sum(np.sum(cm, axis=0) * np.sum(cm, axis=1)) / (n ** 2)
-    if p_e == 1:
-        return 1.0, 0.0
-    kappa = (p0 - p_e) / (1 - p_e)
-    se_kappa = np.sqrt((p0 * (1 - p0)) / (n * (1 - p_e) ** 2))
-    return kappa, se_kappa
+# Azure OpenAI API 配置
+# 与 strategy_classification_azure.py 的调用方式一致：AzureOpenAI + json_object + GPT-5.1
+ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT", "https://chenyitong-llmopinion-gpt.openai.azure.com/")
+DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-5.1")
+SUBSCRIPTION_KEY = os.getenv("AZURE_OPENAI_API_KEY", "")
+API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-12-01-preview")
 
-
-def compare_kappas(k1, se1, k2, se2):
-    if se1 == 0 and se2 == 0:
-        return 1.0
-    denom = np.sqrt(se1 ** 2 + se2 ** 2)
-    if denom == 0:
-        return 1.0
-    z_score = abs(k1 - k2) / denom
-    p_value = 2 * (1 - norm.cdf(z_score))
-    return p_value
-
-
-def compare_proportions(count1, nobs1, count2, nobs2):
-    if nobs1 == 0 or nobs2 == 0:
-        return 1.0
-    counts = np.array([count1, count2])
-    nobs = np.array([nobs1, nobs2])
-    if min(counts) < 0 or min(nobs - counts) < 0:
-        return 1.0
-    stat, p_value = proportions_ztest(counts, nobs)
-    return p_value
-
-
-def get_star(p):
-    if pd.isna(p):
-        return "ns"
-    if p < 0.001:
-        return "***"
-    if p < 0.01:
-        return "**"
-    if p < 0.05:
-        return "*"
-    return "ns"
 
 # ==========================================
-# 3. 数据加载与清洗
+# 2. 话题类型标注 Prompt（基于附件第6-7页）
 # ==========================================
-def parse_binary_label(value):
-    if isinstance(value, bool):
-        return 1 if value else 0
-    if isinstance(value, int) and value in [0, 1]:
-        return int(value)
-    if isinstance(value, float) and value in [0.0, 1.0]:
-        return int(value)
-    if isinstance(value, str):
-        v = value.strip().lower()
-        if v in ["true", "1", "yes", "y"]:
-            return 1
-        if v in ["false", "0", "no", "n"]:
-            return 0
-    return None
+SYSTEM_PROMPT = """
+This is an academic research annotation task. The texts you will read are from a publicly available research dataset (Reddit ChangeMyView). Some posts may discuss sensitive topics. Your role is strictly to classify the text according to the given schema. Do not refuse to annotate based on topic sensitivity.
+
+You are an expert annotator for argument topic classification.
+Your task is to read an original post from an online debate forum and classify the core claim of the post into one of three proposition types.
+
+PROPOSITION OF FACT: The core claim is about how the world IS. The disagreement could in principle be resolved through evidence, data, or logical demonstration. The poster is asserting that something is true or false, possible or impossible, or making a causal or predictive claim.
+Examples:
+- "GMO foods are harmful to human health."
+- "Self-driving cars are safer than human drivers."
+
+PROPOSITION OF VALUE: The core claim is a judgment about what is good, bad, right, wrong, important, or worthless. The disagreement is fundamentally about values, morals, or evaluative criteria, not purely about facts.
+Examples:
+- "The death penalty is morally unacceptable."
+- "Young people who smoke despite knowing the risks are being foolish."
+
+PROPOSITION OF POLICY: The core claim is about what should or should not be done. The disagreement is about a proposed course of action, law, rule, or behavioral norm.
+Examples:
+- "Marijuana should be legalized."
+- "Governments should ban all surveillance programs."
+
+CLASSIFICATION RULE: Many posts contain elements of more than one type. Classify based on the core claim the poster is defending, not the supporting arguments. Ask yourself: what is the poster ultimately trying to convince others of? If it is that something IS the case, choose FACT. If it is that something is GOOD or BAD, choose VALUE. If it is that something SHOULD BE DONE, choose POLICY.
+"""
+
+USER_PROMPT_TEMPLATE = """Original Post:
+Title: {title}
+Body: {text}
+
+Classify the core claim of this post into one of three types.
+Output strictly as a JSON object:
+{{
+"proposition_type": "<fact | value | policy>"
+}}"""
 
 
-def get_model_prediction(branch):
-    """
-    兼容新旧结构。
-    新 observer 结构优先读取 delta_awarded：
-        "delta_awarded": false
-    旧结构保留兼容：
-        "agent_delta": false
-        "agent_delta_awarded": false
-    """
-    for key in ["delta_awarded", "agent_delta", "agent_delta_awarded", "predicted_delta", "prediction"]:
-        if key in branch:
-            parsed = parse_binary_label(branch.get(key))
-            if parsed is not None:
-                return parsed
-    return None
+# ==========================================
+# 3. Azure 调用与 JSON 校验
+# ==========================================
+def build_client() -> AzureOpenAI:
+    if not SUBSCRIPTION_KEY:
+        raise RuntimeError(
+            "未检测到 AZURE_OPENAI_API_KEY。请先执行：\n"
+            "export AZURE_OPENAI_API_KEY='你的 Azure API Key'\n"
+            "或在 Windows PowerShell 中执行：\n"
+            "$env:AZURE_OPENAI_API_KEY='你的 Azure API Key'"
+        )
+
+    return AzureOpenAI(
+        api_version=API_VERSION,
+        azure_endpoint=ENDPOINT,
+        api_key=SUBSCRIPTION_KEY,
+    )
 
 
-def get_human_label(branch, default_label=None):
-    if "human_label" in branch:
-        parsed = parse_binary_label(branch.get("human_label"))
-        if parsed is not None:
-            return parsed
-    return default_label
+def extract_json_dict(content: str) -> Dict[str, Any]:
+    if not content or content.strip() == "":
+        raise ValueError("API 返回了空内容。")
+
+    match = re.search(r"\{.*\}", content.strip(), re.DOTALL)
+    clean_json_str = match.group(0) if match else content.strip()
+    return json.loads(clean_json_str)
 
 
-def normalize_topic(x):
-    if x is None:
-        return None
-    x = str(x).strip().lower()
-    if x in ["fact", "value", "policy"]:
-        return x.capitalize()
-    return None
+def call_azure_openai_with_check(client: AzureOpenAI, messages: List[Dict[str, str]], max_retries: int = 3) -> Dict[str, Any]:
+    """调用 GPT-5.1 标注话题类型，并强制解析为 {"proposition_type": "..."}。"""
+    valid_labels = {"fact", "value", "policy"}
+
+    for attempt in range(max_retries):
+        try:
+            response = client.chat.completions.create(
+                model=DEPLOYMENT_NAME,
+                messages=messages,
+                response_format={"type": "json_object"},
+                temperature=0.1,
+                max_completion_tokens=300,
+            )
+            content = response.choices[0].message.content
+            result_dict = extract_json_dict(content)
+
+            if "proposition_type" not in result_dict:
+                raise ValueError(f"JSON 缺失 proposition_type 字段。当前返回: {result_dict}")
+
+            label = str(result_dict["proposition_type"]).strip().lower()
+            if label not in valid_labels:
+                raise ValueError(f"proposition_type 必须是 fact/value/policy 之一。当前返回: {result_dict}")
+
+            return {"proposition_type": label}
+
+        except Exception as e:
+            print(f"  [API/解析异常] 尝试 {attempt + 1}/{max_retries} 失败: {e}")
+            time.sleep(3)
+
+    return {"proposition_type": None, "error": "FAILED"}
 
 
-def unwrap_json_list(data, filepath):
-    if isinstance(data, list):
-        return data
-    if isinstance(data, dict):
-        for key in ["data", "results", "items", "records"]:
-            if key in data and isinstance(data[key], list):
-                return data[key]
-    raise ValueError(f"{filepath} 的JSON结构不是list，也没有可识别的list字段。")
+# ==========================================
+# 4. 话题类型标注：整条原帖级别，单标签三选一
+# ==========================================
+def annotate_topics(
+    ops_file: str = OPS_FILE,
+    pairs_file: str = PAIRS_FILE,
+    output_file: str = TOPIC_OUTPUT_FILE,
+    sleep_seconds: float = 0.3,
+    save_every: int = 20,
+) -> None:
+    print("正在加载数据集...")
 
+    if not os.path.exists(ops_file):
+        print(f"❌ 找不到原帖文件: {ops_file}")
+        return
+    with open(ops_file, "r", encoding="utf-8") as f:
+        ops_list = json.load(f)
+    ops_dict = {op["id"]: op for op in ops_list}
+    print(f"✅ 成功加载 {len(ops_dict)} 条原帖数据。")
 
-def load_data():
-    print("📦 正在加载话题分类数据...")
-    if not os.path.exists(TOPIC_FILE):
-        raise FileNotFoundError(f"找不到Topic文件: {TOPIC_FILE}")
+    # 只标注 single_turn_pairs 中实际出现的 root_id，避免标注无关 OP
+    target_root_ids = set(ops_dict.keys())
+    if pairs_file and os.path.exists(pairs_file):
+        with open(pairs_file, "r", encoding="utf-8") as f:
+            pairs_data = json.load(f)
+        target_root_ids = set()
+        for _, branches in pairs_data.items():
+            for branch_type in ("success", "failure"):
+                reply_data = branches.get(branch_type, {})
+                root_id = reply_data.get("root")
+                if root_id:
+                    target_root_ids.add(root_id)
+        print(f"✅ 从 pairs 文件中识别出 {len(target_root_ids)} 个需要标注的话题 root_id。")
+    else:
+        print("⚠️ 未找到 pairs 文件，将标注 ops_file 中全部原帖。")
 
-    with open(TOPIC_FILE, 'r', encoding='utf-8') as f:
-        topics_data = json.load(f)
+    annotated_ops = {}
+    if os.path.exists(output_file):
+        try:
+            with open(output_file, "r", encoding="utf-8") as f:
+                loaded = json.load(f)
+            # 兼容 list 或 dict 两种存档结构
+            if isinstance(loaded, list):
+                annotated_ops = {op["id"]: op for op in loaded if "id" in op}
+            elif isinstance(loaded, dict):
+                annotated_ops = loaded
+            print(f"📦 发现本地存档，已完成 {len(annotated_ops)}/{len(target_root_ids)} 条，自动跳过。")
+        except Exception as e:
+            print(f"⚠️ 读取存档失败，将从头开始。错误: {e}")
 
-    topic_map = {}
-    for item in topics_data:
-        root_id = item.get("id") or item.get("root_id")
-        topic = normalize_topic(item.get("proposition_type"))
-        if root_id and topic:
-            topic_map[root_id] = topic
+    client = build_client()
+    count = sum(1 for rid in target_root_ids if rid in annotated_ops and annotated_ops[rid].get("proposition_type"))
 
-    records = []
-    skipped_files = []
-    skipped_no_topic = 0
-    skipped_no_prediction = 0
-
-    for model_name, filepath in MODEL_FILES.items():
-        if not os.path.exists(filepath):
-            print(f"⚠️ 文件不存在，跳过: {model_name} -> {filepath}")
-            skipped_files.append((model_name, filepath))
+    for root_id in sorted(target_root_ids):
+        if root_id in annotated_ops and annotated_ops[root_id].get("proposition_type"):
             continue
 
-        print(f"  正在读取: {model_name}")
-        with open(filepath, 'r', encoding='utf-8') as f:
-            data = unwrap_json_list(json.load(f), filepath)
-
-        for item in data:
-            root_id = item.get('root_id')
-            topic = topic_map.get(root_id)
-            if topic not in ['Fact', 'Value', 'Policy']:
-                skipped_no_topic += 1
-                continue
-
-            evaluation_mode = str(item.get("evaluation_mode", "")).strip().lower()
-            if evaluation_mode and evaluation_mode != "observer":
-                continue
-
-            branch_specs = [
-                ('branch_A_human_success', 1),
-                ('branch_B_human_failure', 0)
-            ]
-
-            for branch_key, default_human_label in branch_specs:
-                branch = item.get(branch_key, {})
-                if not isinstance(branch, dict):
-                    skipped_no_prediction += 1
-                    continue
-
-                human_label = get_human_label(branch, default_label=default_human_label)
-                agent_label = get_model_prediction(branch)
-
-                if human_label is None or agent_label is None:
-                    skipped_no_prediction += 1
-                    continue
-
-                records.append({
-                    'Model': model_name,
-                    'Topic': topic,
-                    'Human_Label': int(human_label),
-                    'Agent_Label': int(agent_label),
-                    'Pair_ID': item.get('pair_id'),
-                    'Root_ID': root_id,
-                    'Branch': branch_key,
-                    'Evaluation_Mode': item.get('evaluation_mode', 'observer')
-                })
-
-    if skipped_files:
-        skipped_path = os.path.join(OUTPUT_DIR, "skipped_missing_files.csv")
-        pd.DataFrame(skipped_files, columns=["Model", "Filepath"]).to_csv(skipped_path, index=False)
-        print(f"⚠️ 缺失文件列表已保存: {skipped_path}")
-
-    df = pd.DataFrame(records)
-
-    if df.empty:
-        print("❌ 没有读取到任何有效记录。请检查 MODEL_FILES 路径、delta_awarded 字段和 root_id-topic 匹配。")
-    else:
-        print(f"✅ 成功读取 {len(df)} 条 reply-level 记录。")
-        print("Topic分布：")
-        print(df['Topic'].value_counts().to_string())
-        print("Model分布：")
-        print(df['Model'].value_counts().to_string())
-        print(f"跳过无topic匹配记录数: {skipped_no_topic}")
-        print(f"跳过无有效预测分支数: {skipped_no_prediction}")
-
-    return df
-
-# ==========================================
-# 4. 统计与计算显著性连线
-# ==========================================
-def compute_stats_and_pvalues(df):
-    topics = ['Fact', 'Value', 'Policy']
-    models = df['Model'].unique().tolist()
-    results = []
-
-    for model in models:
-        df_m = df[df['Model'] == model]
-        model_stats = {}
-
-        for topic in topics:
-            df_t = df_m[df_m['Topic'] == topic]
-            if df_t.empty:
-                model_stats[topic] = None
-                continue
-
-            y_true = df_t['Human_Label'].values
-            y_pred = df_t['Agent_Label'].values
-            kappa, se_k = calculate_kappa_and_se(y_true, y_pred)
-
-            df_h1 = df_t[df_t['Human_Label'] == 1]
-            df_h0 = df_t[df_t['Human_Label'] == 0]
-
-            fn_count = len(df_h1[df_h1['Agent_Label'] == 0])
-            fn_nobs = len(df_h1)
-            fp_count = len(df_h0[df_h0['Agent_Label'] == 1])
-            fp_nobs = len(df_h0)
-
-            fn_rate = fn_count / fn_nobs if fn_nobs > 0 else 0
-            fp_rate = fp_count / fp_nobs if fp_nobs > 0 else 0
-
-            model_stats[topic] = {
-                'Kappa': kappa,
-                'SE_Kappa': se_k,
-                'FN_Count': fn_count,
-                'FN_Nobs': fn_nobs,
-                'FP_Count': fp_count,
-                'FP_Nobs': fp_nobs,
-                'FN_Rate': fn_rate,
-                'FP_Rate': fp_rate
-            }
-
-            results.append({
-                'Model': model,
-                'Topic': topic,
-                'N': len(df_t),
-                'Cohen_Kappa': kappa,
-                'FN_Rate': fn_rate,
-                'FP_Rate': fp_rate,
-                'FN_Count': fn_count,
-                'FN_Nobs': fn_nobs,
-                'FP_Count': fp_count,
-                'FP_Nobs': fp_nobs
-            })
-
-        pairs = [('Fact', 'Value'), ('Value', 'Policy'), ('Fact', 'Policy')]
-        for metric, func in [('Cohen_Kappa', 'kappa'), ('FN_Rate', 'prop_fn'), ('FP_Rate', 'prop_fp')]:
-            for t1, t2 in pairs:
-                p_val = 1.0
-                if model_stats.get(t1) and model_stats.get(t2):
-                    if func == 'kappa':
-                        p_val = compare_kappas(
-                            model_stats[t1]['Kappa'], model_stats[t1]['SE_Kappa'],
-                            model_stats[t2]['Kappa'], model_stats[t2]['SE_Kappa']
-                        )
-                    elif func == 'prop_fn':
-                        p_val = compare_proportions(
-                            model_stats[t1]['FN_Count'], model_stats[t1]['FN_Nobs'],
-                            model_stats[t2]['FN_Count'], model_stats[t2]['FN_Nobs']
-                        )
-                    elif func == 'prop_fp':
-                        p_val = compare_proportions(
-                            model_stats[t1]['FP_Count'], model_stats[t1]['FP_Nobs'],
-                            model_stats[t2]['FP_Count'], model_stats[t2]['FP_Nobs']
-                        )
-
-                for r in results:
-                    if r['Model'] == model:
-                        r[f'p_{metric}_{t1}_vs_{t2}'] = p_val
-
-    return pd.DataFrame(results)
-
-# ==========================================
-# 5. 辅助绘图函数
-# ==========================================
-def draw_significance_bars(ax, x1, x2, y, h, text):
-    line_color = '#555555'
-    ax.plot([x1, x1, x2, x2], [y - h, y, y, y - h], lw=1.2, c=line_color)
-
-    if text == "ns":
-        text_color = "#888888"
-        font_weight = "normal"
-        font_size = 11
-    else:
-        text_color = "black"
-        font_weight = "bold"
-        font_size = 15
-
-    ax.text((x1 + x2) / 2, y + (h * 0.2), text,
-            ha='center', va='bottom', color=text_color,
-            fontsize=font_size, fontweight=font_weight)
-
-# ==========================================
-# 6. 绘图 1: 分模型小图排布大图
-# ==========================================
-def plot_grid_view_for_metric(res_df, metric_col, title):
-    models = res_df['Model'].unique()
-    num_models = len(models)
-    cols = 4
-    rows = (num_models + cols - 1) // cols
-
-    fig, axes = plt.subplots(rows, cols, figsize=(6 * cols, 5.5 * rows))
-    axes = axes.flatten()
-
-    topics = ['Fact', 'Value', 'Policy']
-    colors = sns.color_palette("Set2", 3)
-
-    for i, model in enumerate(models):
-        ax = axes[i]
-        df_m = res_df[res_df['Model'] == model].set_index('Topic')
-
-        ax.set_axisbelow(True)
-        ax.yaxis.grid(True, linestyle='--', alpha=0.6, color='gray')
-
-        x_pos = np.arange(len(topics))
-        vals = [df_m.loc[t, metric_col] if t in df_m.index else 0 for t in topics]
-
-        ax.bar(x_pos, vals, color=colors, width=0.6, edgecolor='black', linewidth=0.8)
-
-        ax.set_title(model, fontsize=16, fontweight='bold', pad=15)
-        ax.set_xticks(x_pos)
-        ax.set_xticklabels(topics, fontsize=14)
-        ax.tick_params(axis='y', labelsize=12)
-
-        local_max = max(vals) if max(vals) > 0 else 0.1
-        ylim_max = local_max * 2.2
-        ax.set_ylim(0, ylim_max)
-
-        p_fv = get_star(df_m.iloc[0].get(f'p_{metric_col}_Fact_vs_Value', 1.0))
-        p_vp = get_star(df_m.iloc[0].get(f'p_{metric_col}_Value_vs_Policy', 1.0))
-        p_fp = get_star(df_m.iloc[0].get(f'p_{metric_col}_Fact_vs_Policy', 1.0))
-
-        h_tick = ylim_max * 0.02
-        v_step = ylim_max * 0.12
-
-        y1 = max(vals[0], vals[1]) + v_step
-        draw_significance_bars(ax, 0, 1, y1, h_tick, p_fv)
-
-        y2 = max(vals[1], vals[2]) + v_step
-        y2 = max(y2, y1 + v_step)
-        draw_significance_bars(ax, 1, 2, y2, h_tick, p_vp)
-
-        y3 = max(vals) + v_step
-        y3 = max(y3, y2 + v_step)
-        draw_significance_bars(ax, 0, 2, y3, h_tick, p_fp)
-
-        for j, val in enumerate(vals):
-            if val > 0:
-                ax.text(j, val + (ylim_max * 0.015), f"{val:.3f}",
-                        ha='center', va='bottom', fontsize=11, color='black')
-
-    for j in range(i + 1, len(axes)):
-        fig.delaxes(axes[j])
-
-    plt.suptitle(f'{title} Across Models', fontsize=24, fontweight='bold', y=1.02)
-    plt.tight_layout()
-    save_path = os.path.join(OUTPUT_DIR, f"GridView_{metric_col}.png")
-    plt.savefig(save_path, dpi=300, bbox_inches='tight')
-    plt.close()
-    print(f"  ✅ 已保存: {save_path}")
-
-# ==========================================
-# 7. 绘图 2: 全局对比视图
-# ==========================================
-def plot_global_view_with_sig(res_df, metric_col, title):
-    fact_data = res_df[res_df['Topic'] == 'Fact'][['Model', metric_col]].set_index('Model')
-    sorted_models = fact_data.sort_values(by=metric_col, ascending=False).index.tolist()
-
-    plt.figure(figsize=(24, 10))
-    ax = sns.barplot(data=res_df, x='Model', y=metric_col, hue='Topic', order=sorted_models,
-                     palette='Set2', edgecolor='black', linewidth=0.8)
-
-    ax.set_axisbelow(True)
-    ax.yaxis.grid(True, linestyle='--', alpha=0.6, color='gray')
-
-    plt.title(f'{title} by Model (Sorted by Fact)', fontsize=22, fontweight='bold', pad=20)
-    plt.ylabel(title, fontsize=16)
-    plt.xlabel('Model', fontsize=16)
-    plt.xticks(fontsize=14, rotation=0)
-    plt.yticks(fontsize=14)
-
-    global_max = res_df[metric_col].max()
-    ylim_max = global_max * 2.2 if global_max > 0 else 1
-    ax.set_ylim(0, ylim_max)
-
-    bars = ax.patches
-    num_models = len(sorted_models)
-
-    h_tick = ylim_max * 0.015
-    v_step = ylim_max * 0.1
-
-    for p in bars:
-        h = p.get_height()
-        if not pd.isna(h) and h > 0:
-            ax.text(p.get_x() + p.get_width() / 2, h + (ylim_max * 0.01), f"{h:.3f}",
-                    ha='center', va='bottom', fontsize=10, rotation=45, color='#333333')
-
-    for i, model in enumerate(sorted_models):
-        b_fact = bars[i]
-        b_value = bars[i + num_models]
-        b_policy = bars[i + 2 * num_models]
-
-        x_f, y_f = b_fact.get_x() + b_fact.get_width() / 2, b_fact.get_height()
-        x_v, y_v = b_value.get_x() + b_value.get_width() / 2, b_value.get_height()
-        x_p, y_p = b_policy.get_x() + b_policy.get_width() / 2, b_policy.get_height()
-
-        df_m = res_df[res_df['Model'] == model].iloc[0]
-
-        p_fv = get_star(df_m.get(f'p_{metric_col}_Fact_vs_Value', 1.0))
-        p_vp = get_star(df_m.get(f'p_{metric_col}_Value_vs_Policy', 1.0))
-        p_fp = get_star(df_m.get(f'p_{metric_col}_Fact_vs_Policy', 1.0))
-
-        y_max_fv = max(y_f, y_v) + v_step * 1.5
-        draw_significance_bars(ax, x_f, x_v, y_max_fv, h_tick, p_fv)
-
-        y_max_vp = max(y_v, y_p) + v_step * 1.5
-        y_max_vp = max(y_max_vp, y_max_fv + v_step)
-        draw_significance_bars(ax, x_v, x_p, y_max_vp, h_tick, p_vp)
-
-        y_max_fp = max([y_f, y_v, y_p]) + v_step * 1.5
-        y_max_fp = max(y_max_fp, y_max_vp + v_step)
-        draw_significance_bars(ax, x_f, x_p, y_max_fp, h_tick, p_fp)
-
-    plt.legend(title='Proposition Type', title_fontsize=14, fontsize=13,
-               bbox_to_anchor=(1.01, 1), loc='upper left')
-    plt.tight_layout()
-    save_path = os.path.join(OUTPUT_DIR, f"GlobalView_{metric_col}.png")
-    plt.savefig(save_path, dpi=300, bbox_inches='tight')
-    plt.close()
-    print(f"  ✅ 已保存: {save_path}")
-
-# ==========================================
-# 8. 主执行流程
-# ==========================================
-if __name__ == "__main__":
-    df = load_data()
-
-    if df is not None and not df.empty:
-        raw_path = os.path.join(OUTPUT_DIR, "observer_topic_reply_level_records.csv")
-        df.to_csv(raw_path, index=False)
-        print(f"  ✅ reply-level原始记录已保存至: {raw_path}")
-
-        print("\n📊 正在计算指标与跨 Topic 的显著性检验...")
-        res_df = compute_stats_and_pvalues(df)
-
-        csv_path = os.path.join(OUTPUT_DIR, "topic_analysis_results_with_pvalues.csv")
-        res_df.to_csv(csv_path, index=False)
-        print(f"  ✅ 计算结果已保存至: {csv_path}")
-
-        print("\n🎨 正在绘制可视化图表...")
-        metrics = [
-            ('Cohen_Kappa', "Cohen's Kappa Score"),
-            ('FN_Rate', "FN Rate (Stubbornness)"),
-            ('FP_Rate', "FP Rate (Yielding)")
+        op_data = ops_dict.get(root_id)
+        if not op_data:
+            continue
+
+        print(f"\n--- 进度: {count + 1}/{len(target_root_ids)} (Root ID: {root_id}) ---")
+
+        user_content = USER_PROMPT_TEMPLATE.format(
+            title=op_data.get("title", "N/A"),
+            text=op_data.get("text", "N/A"),
+        )
+        messages = [
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": user_content},
         ]
 
-        for m_col, title in metrics:
-            plot_grid_view_for_metric(res_df, m_col, title)
-            plot_global_view_with_sig(res_df, m_col, title)
+        print("  > 正在标注原帖 proposition_type...")
+        topic_res = call_azure_openai_with_check(client, messages)
+        print(f"    - 结果: {topic_res}")
 
-        print("\n🎉 所有任务执行完毕！")
+        current_op_result = json.loads(json.dumps(op_data))
+        current_op_result["proposition_type"] = topic_res.get("proposition_type")
+        if topic_res.get("error"):
+            current_op_result["proposition_type_error"] = topic_res.get("error")
+
+        annotated_ops[root_id] = current_op_result
+        count += 1
+
+        if count % save_every == 0:
+            with open(output_file, "w", encoding="utf-8") as f:
+                json.dump(annotated_ops, f, indent=4, ensure_ascii=False)
+            print(f"💾 [自动存盘] 进度已安全保存 ({count}/{len(target_root_ids)})")
+
+        time.sleep(sleep_seconds)
+
+    with open(output_file, "w", encoding="utf-8") as f:
+        json.dump(annotated_ops, f, indent=4, ensure_ascii=False)
+
+    print(f"\n🎉 话题类型标注完成！完整数据保存在: {output_file}")
+
+
+# ==========================================
+# 5. 偏差分析工具函数
+# ==========================================
+def safe_bool(x: Any) -> Optional[bool]:
+    if isinstance(x, bool):
+        return x
+    if isinstance(x, str):
+        s = x.strip().lower()
+        if s in {"true", "1", "yes"}:
+            return True
+        if s in {"false", "0", "no"}:
+            return False
+    return None
+
+
+def get_agent_delta(branch_result: Dict[str, Any]) -> Optional[bool]:
+    """兼容第一人称结果中的 agent_delta 和第三人称结果中的 delta_awarded。"""
+    if "agent_delta" in branch_result:
+        return safe_bool(branch_result.get("agent_delta"))
+    if "delta_awarded" in branch_result:
+        return safe_bool(branch_result.get("delta_awarded"))
+    return None
+
+
+def cohen_kappa(tp: int, fp: int, tn: int, fn: int) -> Optional[float]:
+    n = tp + fp + tn + fn
+    if n == 0:
+        return None
+
+    po = (tp + tn) / n
+
+    human_pos = tp + fn
+    human_neg = fp + tn
+    agent_pos = tp + fp
+    agent_neg = fn + tn
+
+    pe = ((human_pos / n) * (agent_pos / n)) + ((human_neg / n) * (agent_neg / n))
+    if abs(1 - pe) < 1e-12:
+        return None
+
+    return (po - pe) / (1 - pe)
+
+
+def safe_rate(num: int, den: int) -> Optional[float]:
+    return num / den if den else None
+
+
+def format_float(x: Optional[float]) -> str:
+    if x is None:
+        return ""
+    return f"{x:.6f}"
+
+
+def infer_model_name_from_path(path: str) -> str:
+    base = os.path.basename(path)
+    name = re.sub(r"\.json$", "", base)
+    name = re.sub(r"^final_v3_results_observer_", "", name)
+    name = re.sub(r"^final_v3_results_", "", name)
+    name = re.sub(r"^final_new_results_", "", name)
+    name = re.sub(r"_v3$", "", name)
+    return name
+
+
+def load_topic_labels(topic_file: str) -> Dict[str, str]:
+    with open(topic_file, "r", encoding="utf-8") as f:
+        data = json.load(f)
+
+    if isinstance(data, list):
+        items = data
+    elif isinstance(data, dict):
+        items = data.values()
+    else:
+        raise ValueError(f"不支持的话题标注文件格式: {type(data)}")
+
+    topic_by_root = {}
+    for op in items:
+        root_id = op.get("id")
+        label = op.get("proposition_type")
+        if root_id and label in {"fact", "value", "policy"}:
+            topic_by_root[root_id] = label
+
+    return topic_by_root
+
+
+def collect_records_from_result_file(result_file: str, topic_by_root: Dict[str, str]) -> List[Dict[str, Any]]:
+    with open(result_file, "r", encoding="utf-8") as f:
+        results = json.load(f)
+
+    model_name = infer_model_name_from_path(result_file)
+    records = []
+
+    for item in results:
+        pair_id = item.get("pair_id")
+        root_id = item.get("root_id")
+        topic = topic_by_root.get(root_id)
+        if topic not in {"fact", "value", "policy"}:
+            continue
+
+        branch_a = item.get("branch_A_human_success", {})
+        pred_a = get_agent_delta(branch_a)
+        if pred_a is not None:
+            records.append({
+                "model": model_name,
+                "result_file": os.path.basename(result_file),
+                "pair_id": pair_id,
+                "root_id": root_id,
+                "proposition_type": topic,
+                "branch": "success",
+                "human_label": 1,
+                "agent_delta": int(pred_a),
+            })
+
+        branch_b = item.get("branch_B_human_failure", {})
+        pred_b = get_agent_delta(branch_b)
+        if pred_b is not None:
+            records.append({
+                "model": model_name,
+                "result_file": os.path.basename(result_file),
+                "pair_id": pair_id,
+                "root_id": root_id,
+                "proposition_type": topic,
+                "branch": "failure",
+                "human_label": 0,
+                "agent_delta": int(pred_b),
+            })
+
+    return records
+
+
+def summarize_records(records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    grouped = defaultdict(list)
+    for r in records:
+        grouped[(r["model"], r["proposition_type"])].append(r)
+
+    rows = []
+    for (model, topic), group in sorted(grouped.items()):
+        tp = fp = tn = fn = 0
+        for r in group:
+            human = int(r["human_label"])
+            agent = int(r["agent_delta"])
+            if human == 1 and agent == 1:
+                tp += 1
+            elif human == 1 and agent == 0:
+                fn += 1
+            elif human == 0 and agent == 1:
+                fp += 1
+            elif human == 0 and agent == 0:
+                tn += 1
+
+        n = tp + fp + tn + fn
+        human_success_rate = safe_rate(tp + fn, n)
+        llm_delta_rate = safe_rate(tp + fp, n)
+        bias_gap = None
+        abs_bias_gap = None
+        if human_success_rate is not None and llm_delta_rate is not None:
+            bias_gap = llm_delta_rate - human_success_rate
+            abs_bias_gap = abs(bias_gap)
+
+        rows.append({
+            "model": model,
+            "proposition_type": topic,
+            "n": n,
+            "tp": tp,
+            "fp": fp,
+            "tn": tn,
+            "fn": fn,
+            "accuracy": safe_rate(tp + tn, n),
+            "cohen_kappa": cohen_kappa(tp, fp, tn, fn),
+            "tpr": safe_rate(tp, tp + fn),
+            "fnr": safe_rate(fn, tp + fn),
+            "fpr": safe_rate(fp, fp + tn),
+            "tnr": safe_rate(tn, fp + tn),
+            "human_success_rate": human_success_rate,
+            "llm_delta_rate": llm_delta_rate,
+            "bias_gap_llm_minus_human": bias_gap,
+            "abs_bias_gap": abs_bias_gap,
+        })
+
+    return rows
+
+
+def summarize_across_models(model_topic_rows: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    grouped = defaultdict(list)
+    for row in model_topic_rows:
+        grouped[row["proposition_type"]].append(row)
+
+    metric_names = [
+        "accuracy", "cohen_kappa", "tpr", "fnr", "fpr", "human_success_rate",
+        "llm_delta_rate", "bias_gap_llm_minus_human", "abs_bias_gap"
+    ]
+
+    out = []
+    for topic, rows in sorted(grouped.items()):
+        summary = {"proposition_type": topic, "num_models": len(rows)}
+        for m in metric_names:
+            vals = [r[m] for r in rows if r.get(m) is not None]
+            if vals:
+                summary[f"mean_{m}"] = sum(vals) / len(vals)
+                if len(vals) > 1:
+                    mean = summary[f"mean_{m}"]
+                    summary[f"sd_{m}"] = math.sqrt(sum((v - mean) ** 2 for v in vals) / (len(vals) - 1))
+                else:
+                    summary[f"sd_{m}"] = None
+            else:
+                summary[f"mean_{m}"] = None
+                summary[f"sd_{m}"] = None
+        out.append(summary)
+
+    return out
+
+
+def chi_square_tests(records: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    """检验 topic type 与 FN/FP 是否有关。若 scipy 不可用，则只输出列联表，不输出 p 值。"""
+    try:
+        from scipy.stats import chi2_contingency  # type: ignore
+    except Exception:
+        chi2_contingency = None
+
+    tests = []
+    grouped_models = sorted(set(r["model"] for r in records))
+
+    for model in grouped_models:
+        model_records = [r for r in records if r["model"] == model]
+
+        # FN率差异：只看 human_label=1 的 success 分支，比较 FN vs TP
+        table_fn = []
+        for topic in ("fact", "value", "policy"):
+            sub = [r for r in model_records if r["proposition_type"] == topic and r["human_label"] == 1]
+            fn = sum(1 for r in sub if r["agent_delta"] == 0)
+            tp = sum(1 for r in sub if r["agent_delta"] == 1)
+            table_fn.append([fn, tp])
+
+        tests.append(run_chi_square_or_table(model, "fn_rate_by_topic", table_fn, chi2_contingency))
+
+        # FPR差异：只看 human_label=0 的 failure 分支，比较 FP vs TN
+        table_fp = []
+        for topic in ("fact", "value", "policy"):
+            sub = [r for r in model_records if r["proposition_type"] == topic and r["human_label"] == 0]
+            fp = sum(1 for r in sub if r["agent_delta"] == 1)
+            tn = sum(1 for r in sub if r["agent_delta"] == 0)
+            table_fp.append([fp, tn])
+
+        tests.append(run_chi_square_or_table(model, "fpr_by_topic", table_fp, chi2_contingency))
+
+    return tests
+
+
+def run_chi_square_or_table(model: str, test_name: str, table: List[List[int]], chi2_contingency_func) -> Dict[str, Any]:
+    row = {
+        "model": model,
+        "test": test_name,
+        "table_rows": "fact,value,policy",
+        "table_cols": "FN,TP" if test_name == "fn_rate_by_topic" else "FP,TN",
+        "table_json": json.dumps(table, ensure_ascii=False),
+        "chi2": None,
+        "p_value": None,
+        "dof": None,
+    }
+
+    # 如果某一行全0，scipy会报错；这种情况下样本不足，不做显著性检验
+    if any(sum(x) == 0 for x in table):
+        row["note"] = "某些话题类别样本量为0，未做卡方检验。"
+        return row
+
+    if chi2_contingency_func is None:
+        row["note"] = "当前环境未安装 scipy，仅输出列联表。"
+        return row
+
+    try:
+        chi2, p, dof, _ = chi2_contingency_func(table)
+        row["chi2"] = float(chi2)
+        row["p_value"] = float(p)
+        row["dof"] = int(dof)
+        row["note"] = ""
+    except Exception as e:
+        row["note"] = f"卡方检验失败: {e}"
+
+    return row
+
+
+def write_csv(path: str, rows: List[Dict[str, Any]]) -> None:
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    if not rows:
+        with open(path, "w", encoding="utf-8", newline="") as f:
+            f.write("")
+        return
+
+    # 保持所有字段
+    fieldnames = []
+    for row in rows:
+        for k in row.keys():
+            if k not in fieldnames:
+                fieldnames.append(k)
+
+    with open(path, "w", encoding="utf-8", newline="") as f:
+        writer = csv.DictWriter(f, fieldnames=fieldnames)
+        writer.writeheader()
+        for row in rows:
+            cleaned = {}
+            for k, v in row.items():
+                if isinstance(v, float):
+                    cleaned[k] = format_float(v)
+                else:
+                    cleaned[k] = v
+            writer.writerow(cleaned)
+
+
+def analyze_topic_bias(
+    topic_file: str = TOPIC_OUTPUT_FILE,
+    results_dir: str = RESULTS_DIR,
+    results_glob: str = RESULTS_GLOB,
+    output_dir: str = ANALYSIS_OUTPUT_DIR,
+    include_observer: bool = False,
+) -> None:
+    print("正在加载话题类型标注...")
+    if not os.path.exists(topic_file):
+        print(f"❌ 找不到话题标注文件: {topic_file}")
+        print("请先运行：python topic_bias_experiment.py --mode annotate")
+        return
+
+    topic_by_root = load_topic_labels(topic_file)
+    print(f"✅ 成功加载 {len(topic_by_root)} 条 proposition_type 标注。")
+
+    result_files = sorted(glob.glob(os.path.join(results_dir, results_glob)))
+    if not include_observer:
+        result_files = [p for p in result_files if "observer" not in os.path.basename(p)]
+
+    if not result_files:
+        print(f"❌ 没有找到结果文件: {os.path.join(results_dir, results_glob)}")
+        print("请确认 --results-dir 和 --results-glob 是否正确。")
+        return
+
+    print(f"✅ 找到 {len(result_files)} 个 LLM pointwise 结果文件。")
+
+    all_records = []
+    for result_file in result_files:
+        print(f"  > 读取结果文件: {result_file}")
+        file_records = collect_records_from_result_file(result_file, topic_by_root)
+        print(f"    - 可分析记录数: {len(file_records)}")
+        all_records.extend(file_records)
+
+    if not all_records:
+        print("❌ 没有可分析记录。请检查 root_id 是否能与话题标注文件匹配。")
+        return
+
+    os.makedirs(output_dir, exist_ok=True)
+
+    # 保存逐条长表，方便后续 R / Python 进一步建模
+    long_path = os.path.join(output_dir, "topic_bias_long_records.csv")
+    write_csv(long_path, all_records)
+
+    # 分模型、分话题汇总
+    model_topic_rows = summarize_records(all_records)
+    summary_path = os.path.join(output_dir, "topic_bias_by_model_and_type.csv")
+    write_csv(summary_path, model_topic_rows)
+
+    # 跨模型均值
+    across_rows = summarize_across_models(model_topic_rows)
+    across_path = os.path.join(output_dir, "topic_bias_across_models_mean.csv")
+    write_csv(across_path, across_rows)
+
+    # 显著性检验：话题类型是否影响 FN率 / FPR
+    test_rows = chi_square_tests(all_records)
+    tests_path = os.path.join(output_dir, "topic_bias_chi_square_tests.csv")
+    write_csv(tests_path, test_rows)
+
+    print("\n🎉 话题类型偏差分析完成！输出文件：")
+    print(f"1. 逐条长表: {long_path}")
+    print(f"2. 分模型分话题指标: {summary_path}")
+    print(f"3. 跨模型均值汇总: {across_path}")
+    print(f"4. 话题类型显著性检验: {tests_path}")
+
+    print("\n重点阅读指标：")
+    print("- cohen_kappa：LLM 与人类在该话题类型内的一致性，越低偏差越大")
+    print("- fnr：人类认为成功说服但 LLM 判为未说服的比例，越高表示 LLM 越保守")
+    print("- fpr：人类认为未成功说服但 LLM 判为成功说服的比例")
+    print("- bias_gap_llm_minus_human：LLM delta 率 - 人类 delta 率，负值表示 LLM 比人类更少授予 delta")
+
+
+# ==========================================
+# 6. 命令行入口
+# ==========================================
+def parse_args():
+    parser = argparse.ArgumentParser(description="话题类型标注 + LLM/人类偏差分组分析实验")
+
+    parser.add_argument("--mode", choices=["annotate", "analyze", "all"], default="all",
+                        help="annotate=只标注话题类型；analyze=只做偏差分析；all=先标注再分析")
+    parser.add_argument("--ops-file", default=OPS_FILE)
+    parser.add_argument("--pairs-file", default=PAIRS_FILE)
+    parser.add_argument("--topic-output-file", default=TOPIC_OUTPUT_FILE)
+
+    parser.add_argument("--results-dir", default=RESULTS_DIR)
+    parser.add_argument("--results-glob", default=RESULTS_GLOB)
+    parser.add_argument("--analysis-output-dir", default=ANALYSIS_OUTPUT_DIR)
+    parser.add_argument("--include-observer", action="store_true",
+                        help="默认排除 observer 结果；打开后允许分析 observer 结果。")
+
+    parser.add_argument("--sleep-seconds", type=float, default=0.3)
+    parser.add_argument("--save-every", type=int, default=20)
+
+    return parser.parse_args()
+
+
+def main():
+    args = parse_args()
+
+    if args.mode in {"annotate", "all"}:
+        annotate_topics(
+            ops_file=args.ops_file,
+            pairs_file=args.pairs_file,
+            output_file=args.topic_output_file,
+            sleep_seconds=args.sleep_seconds,
+            save_every=args.save_every,
+        )
+
+    if args.mode in {"analyze", "all"}:
+        analyze_topic_bias(
+            topic_file=args.topic_output_file,
+            results_dir=args.results_dir,
+            results_glob=args.results_glob,
+            output_dir=args.analysis_output_dir,
+            include_observer=args.include_observer,
+        )
+
+
+if __name__ == "__main__":
+    main()
