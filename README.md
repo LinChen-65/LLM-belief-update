@@ -21,8 +21,8 @@ The code is written in Python. The main scripts use the following packages:
 
 | Package | Version | Purpose |
 | --- | --- | --- |
-| `openai` | 2.14.0 | API calls to OpenAI-compatible and Azure OpenAI endpoints |
-| `httpx` | 0.28.1 | API timeout and HTTP configuration |
+| `openai` | `2.14.0` | API calls to OpenAI-compatible and Azure OpenAI endpoints |
+| `httpx` | `0.28.1` | API timeout and HTTP configuration |
 | `numpy` | `2.2.6` | numerical computation |
 | `pandas` | `2.2.3` | data processing and tabulation |
 | `matplotlib` | `3.10.5` | plotting figures |
