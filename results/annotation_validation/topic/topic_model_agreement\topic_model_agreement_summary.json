@@ -1,0 +1,64 @@
+{
+    "input_files": {
+        "gpt_5_1": "/data7/chenyitong/Winning_Arguments/topic_classification_results.json",
+        "glm_5_2": "/data7/chenyitong/Winning_Arguments/topic_classification_results_1.json"
+    },
+    "output_dir": "/data7/chenyitong/Winning_Arguments/topic_model_agreement",
+    "coverage": {
+        "gpt_5_1_total": 2262,
+        "glm_5_2_total": 2262,
+        "common_ids": 2262,
+        "only_gpt_5_1": 0,
+        "only_glm_5_2": 0
+    },
+    "agreement": {
+        "total_common_samples": 2262,
+        "agree_count": 1896,
+        "disagree_count": 366,
+        "raw_agreement": 0.8381962864721485,
+        "cohen_kappa": 0.7512224145391605
+    },
+    "label_distribution_on_common_ids": {
+        "gpt_5_1": {
+            "policy": 618,
+            "value": 1010,
+            "fact": 634
+        },
+        "glm_5_2": {
+            "policy": 603,
+            "value": 969,
+            "fact": 690
+        }
+    },
+    "per_class_stats": {
+        "fact": {
+            "gpt_5_1_count": 634,
+            "gpt_5_1_ratio": 0.28028293545534927,
+            "glm_5_2_count": 690,
+            "glm_5_2_ratio": 0.3050397877984085,
+            "both_same_label_count": 557,
+            "both_same_label_ratio_over_total": 0.24624226348364278
+        },
+        "value": {
+            "gpt_5_1_count": 1010,
+            "gpt_5_1_ratio": 0.4465075154730327,
+            "glm_5_2_count": 969,
+            "glm_5_2_ratio": 0.42838196286472147,
+            "both_same_label_count": 833,
+            "both_same_label_ratio_over_total": 0.3682581786030062
+        },
+        "policy": {
+            "gpt_5_1_count": 618,
+            "gpt_5_1_ratio": 0.27320954907161804,
+            "glm_5_2_count": 603,
+            "glm_5_2_ratio": 0.26657824933687,
+            "both_same_label_count": 506,
+            "both_same_label_ratio_over_total": 0.22369584438549955
+        }
+    },
+    "labels": [
+        "fact",
+        "value",
+        "policy"
+    ]
+}
