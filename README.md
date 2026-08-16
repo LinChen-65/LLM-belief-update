@@ -9,11 +9,16 @@ The project studies whether large language models make belief-update judgments i
 - `src/`: core code for running experiments and analyses.
   - `src/dataset/`: datasets required by the experiments.
   - Other `src/*.py` files: core scripts for model calls, annotation, evaluation, analysis, and plotting.
+  - Additional `src/*.py` files: robustness checks and validation utilities added for the revised analysis.
 - `results/`: core experimental results reported in the manuscript.
   - `results/first_person/`: results for the first-person belief-update judgment experiment, where the model acts as the original poster.
   - `results/third_person/`: results for the third-person observer judgment experiment, where the model predicts whether the original poster would change their view.
   - `results/topic/`: results for the topic-dimension analysis, grouping original posts by proposition type.
   - `results/strategy/`: results for the persuasion-strategy analysis, grouping challenger replies by argument strategy.
+  - `results/topic_model_agreement/`: cross-model validation results for proposition-type annotation agreement between GPT-5.1 and GLM-5.2.
+  - `results/strategy_effectiveness_plot/`: reply-level and model-level persuasion-strategy effectiveness summaries and figures.
+  - `results/multiple_comparison_correction_table1/`: Benjamini-Hochberg correction outputs for the textual-feature results reported in Appendix Table 1.
+  - `results/sampling_robustness/`: repeated-run consistency diagnostics and mismatch records for sampling-robustness analysis.
 
 ## Requirements
 
@@ -26,6 +31,7 @@ The code is written in Python. The main scripts use the following packages:
 | `numpy` | `2.2.6` | numerical computation |
 | `pandas` | `2.2.3` | data processing and tabulation |
 | `matplotlib` | `3.10.5` | plotting figures |
+| `seaborn` | compatible with the installed Matplotlib version | statistical visualization for topic and strategy analyses |
 | `scikit-learn` | `1.7.1` | metrics such as Cohen's kappa |
 | `scipy` | `1.15.3` | statistical analysis |
 | `statsmodels` | `0.14.5` | regression analysis |
@@ -34,6 +40,7 @@ install the core packages with:
 
 ```bash
 pip install openai httpx numpy pandas matplotlib scikit-learn scipy statsmodels
+pip install seaborn
 ```
 
 ## Data
@@ -54,6 +61,10 @@ Typical data files include paired ChangeMyView replies, original post metadata, 
 | Third-person judgment | LLM acts as an external observer and predicts whether the challenger changed the OP's view. | `src/` | `results/third_person/` |
 | Topic analysis | Original posts are classified into fact, value, and policy propositions; bias is compared within each topic type. | `src/` | `results/topic/` |
 | Strategy analysis | Challenger replies are classified by persuasion strategy; human and LLM persuasion rates are compared across strategy types. | `src/` | `results/strategy/` |
+| Topic annotation agreement | GPT-5.1 and GLM-5.2 proposition-type annotations are aligned over the full corpus and compared using raw agreement and Cohen's kappa. | processed validation pipeline | `results/topic_model_agreement/` |
+| Sampling robustness | Repeated first-person runs are compared using exact-match rate, pairwise agreement, pairwise Cohen's kappa, and Fleiss' kappa. | `src/check_gemini_agent_delta_consistency.py` | `results/sampling_robustness/` |
+| Multiple-comparison correction | Benjamini-Hochberg correction is applied separately to the human, first-person LLM, and observer LLM textual-feature regression families reported in Appendix Table 1. | processed statistical analysis | `results/multiple_comparison_correction_table1/` |
+| Strategy effectiveness visualization | Human and model persuasion rates are summarized by logos, pathos, ethos, and their combinations. | `src/plot_persuasion_strategy_human_vs_first_person.py` | `results/strategy_effectiveness_plot/` |
 
 ## Reproducing the Analyses
 
@@ -95,6 +106,12 @@ Run scripts from the repository root. Some scripts require API access and should
 | `topic_bias_analysis.py` | Combines topic labels with model judgment results, groups cases by proposition type, and computes bias metrics such as Cohen's kappa, FN rate, and FP rate for each topic category. |
 | `strategy_analysis.py` | Combines persuasion-strategy labels with observer model judgments, groups replies by strategy combination, and computes alignment and bias metrics such as success-rate gaps, Cohen's kappa, FN rate, FP rate, and significance tests. |
 
+### Robustness and validation scripts
+
+| Script | Purpose |
+| --- | --- |
+| `check_gemini_agent_delta_consistency.py` | Compares three repeated Gemini first-person runs at the reply-branch level. It reports exact three-run agreement, pairwise agreement, pairwise Cohen's kappa, and Fleiss' kappa, and saves cases whose `agent_delta` labels differ across runs. |
+
 ### Plotting and figure scripts
 
 | Script | Purpose |
@@ -110,6 +127,61 @@ Run scripts from the repository root. Some scripts require API access and should
 | `plot_strategy_distribution.py` | Analyzes the distribution of persuasion-strategy combinations in `single_turn_pairs_with_strategies.json` and plots a pie chart of strategy combinations. |
 | `plot_persuasion_strategy_human_vs_first_person.py` | Plots human persuasion rates against first-person LLM persuasion rates by persuasion-strategy type. Individual model points and across-model means are shown. |
 | `plot_strategy_effectiveness_first_vs_observer.py` | Computes persuasion rates by strategy combination for human labels, first-person LLM judgments, and observer judgments. It produces scatter plots comparing Human vs First-person, Human vs Observer, and First-person vs Observer. |
+
+## Additional Validation and Result Files
+
+### Topic model agreement
+
+The `results/topic_model_agreement/` directory contains the full-corpus proposition-type comparison between GPT-5.1 and GLM-5.2. The two annotation sets cover the same 2,262 original posts and achieve Cohen's kappa of approximately 0.751.
+
+| File | Description |
+| --- | --- |
+| `topic_model_agreement_aligned_detail.csv` | Reply-independent OP-level records with GPT-5.1 and GLM-5.2 labels, agreement indicators, and original text. |
+| `topic_model_agreement_summary.json` | Corpus coverage, raw agreement, Cohen's kappa, label distributions, and per-class statistics. |
+| `topic_model_agreement_confusion_matrix.csv` | Confusion matrix for fact, value, and policy labels. |
+| `topic_model_agreement_label_distribution.csv` | Label counts and proportions for both annotation models. |
+| `topic_model_agreement_mismatches.csv` | Cases where the two models assign different proposition types. |
+| `agreement_summary_bar.svg` | Visual summary of raw agreement and disagreement. |
+| `confusion_matrix_heatmap.svg` | Heatmap of the cross-model confusion matrix. |
+| `label_distribution_bar.svg` | Comparison of label distributions across the two models. |
+
+### Sampling robustness
+
+The repeated-run consistency analysis treats the main Gemini result file and two additional seeded result files as three independent annotation runs. The analysis is performed separately for the human-success and human-failure branches and for both branches combined.
+
+| File | Description |
+| --- | --- |
+| `gemini_agent_delta_mismatches.csv` | Cases where at least one of the three Gemini runs produces a different `agent_delta` label. |
+
+### Persuasion-strategy effectiveness
+
+The `results/strategy_effectiveness_plot/` directory contains the processed reply-level records and summaries used to compare human persuasion rates with first-person model persuasion rates across strategy combinations.
+
+| File | Description |
+| --- | --- |
+| `reply_level_strategy_results_long.csv` | Long-format reply-level data containing pair ID, branch, strategy combination, human label, model prediction, and model name. |
+| `human_strategy_summary.csv` | Human persuasion rate and sample size for each strategy combination. |
+| `model_strategy_summary.csv` | Model-specific persuasion rate by strategy combination. |
+| `mean_strategy_summary.csv` | Across-model mean persuasion rate compared with the human rate. |
+| `persuasion_strategy_effectiveness_scatter.png` | Raster version of the strategy-effectiveness scatter plot. |
+| `persuasion_strategy_effectiveness_scatter.pdf` | Vector-ready publication version of the same plot. |
+
+### Multiple-comparison correction
+
+The `results/multiple_comparison_correction_table1/` directory contains Benjamini-Hochberg adjusted results for the 40 textual features included in Appendix Table 1. The human, first-person LLM, and observer LLM regressions are treated as three separate testing families.
+
+| File | Description |
+| --- | --- |
+| `table1_exact_results_normalized.csv` | Normalized regression coefficients and raw p-values collected from the three source regressions. |
+| `table1_bh_corrected_long.csv` | Long-format table containing raw p-values, BH-adjusted q-values, and significance indicators. |
+| `table1_bh_corrected_wide_for_manuscript.csv` | Wide-format table prepared for manuscript reporting. |
+| `table1_bh_significance_summary.csv` | Number of significant features before and after correction for each testing family. |
+| `table1_significance_changed_after_bh.csv` | Features whose significance status changes after BH correction. |
+| `table1_excluded_terms_or_unmapped_features.csv` | Regression terms excluded from correction or not mapped to manuscript feature names. |
+| `table1_multiple_comparison_correction_summary.json` | Analysis configuration, input metadata, output paths, and correction summary. |
+| `plots/table1_significance_counts_before_after_bh.svg` | Comparison of significant-feature counts before and after correction. |
+| `plots/table1_bh_q_value_heatmap.svg` | Heatmap of BH-adjusted q-values. |
+| `plots/table1_raw_p_vs_bh_q.svg` | Comparison between raw p-values and adjusted q-values. |
 
 ### Example workflow
 
@@ -160,6 +232,9 @@ python src/plot_three_way_regression_comparison.py
 python src/plot_strategy_distribution.py
 python src/plot_persuasion_strategy_human_vs_first_person.py
 python src/plot_strategy_effectiveness_first_vs_observer.py
+
+# 11. Check repeated-run consistency for Gemini
+python src/check_gemini_agent_delta_consistency.py
 ```
 
 Before running scripts that call APIs, set the required credentials, for example:
@@ -172,5 +247,3 @@ export AZURE_OPENAI_ENDPOINT="your_azure_endpoint"
 ```
 
 The exact environment variables required may differ by script depending on whether it uses SiliconFlow, OpenRouter, Azure OpenAI, or another OpenAI-compatible endpoint.
-
-
