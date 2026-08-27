@@ -10,7 +10,7 @@ from openai import OpenAI
 INPUT_FILE = '/data7/chenyitong/Winning_Arguments/extracted_error_ops.json'
 OUTPUT_FILE = '/data7/chenyitong/Winning_Arguments/rewritten_error_ops.json'
 
-API_KEY = "sk-bzsitegoadikvrvitcrnsjqkeppmdotnbuvzrsupgsdzxdnz"
+API_KEY = "" # Put your key here
 BASE_URL = "https://api.siliconflow.cn/v1"
 MODEL_NAME = "deepseek-ai/DeepSeek-V3"
 
