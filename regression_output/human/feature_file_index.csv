@@ -1,0 +1,41 @@
+feature_id,paper_feature_name,feature_group,paper_expected_direction,paper_p_threshold,file
+reply_frac_in_all,reply frac. in all,interplay,down,0.0001,feature_level_csvs/reply_frac_in_all.csv
+reply_frac_in_content,reply frac. in content,interplay,down,0.0001,feature_level_csvs/reply_frac_in_content.csv
+op_frac_in_stopwords,OP frac. in stopwords,interplay,up,0.0001,feature_level_csvs/op_frac_in_stopwords.csv
+common_in_stopwords,#common in stopwords,interplay,up,0.0001,feature_level_csvs/common_in_stopwords.csv
+reply_frac_in_stopwords,reply frac. in stopwords,interplay,down,0.0001,feature_level_csvs/reply_frac_in_stopwords.csv
+op_frac_in_all,OP frac. in all,interplay,up,0.0001,feature_level_csvs/op_frac_in_all.csv
+jaccard_in_content,Jaccard in content,interplay,down,0.0001,feature_level_csvs/jaccard_in_content.csv
+jaccard_in_stopwords,Jaccard in stopwords,interplay,up,0.0001,feature_level_csvs/jaccard_in_stopwords.csv
+common_in_content,#common in content,interplay,up,0.0001,feature_level_csvs/common_in_content.csv
+op_frac_in_content,OP frac. in content,interplay,up,0.05,feature_level_csvs/op_frac_in_content.csv
+jaccard_in_all,Jaccard in all,interplay,down,0.05,feature_level_csvs/jaccard_in_all.csv
+num_words,#words,argument_only,up,0.0001,feature_level_csvs/num_words.csv
+num_definite_articles,#definite articles,argument_only,up,0.0001,feature_level_csvs/num_definite_articles.csv
+num_indefinite_articles,#indefinite articles,argument_only,up,0.0001,feature_level_csvs/num_indefinite_articles.csv
+num_positive_words,#positive words,argument_only,up,0.0001,feature_level_csvs/num_positive_words.csv
+num_2nd_person_pronouns,#2nd person pronoun,argument_only,up,0.0001,feature_level_csvs/num_2nd_person_pronouns.csv
+num_links,#links,argument_only,up,0.0001,feature_level_csvs/num_links.csv
+num_negative_words,#negative words,argument_only,up,0.0001,feature_level_csvs/num_negative_words.csv
+num_hedges,#hedges,argument_only,up,0.0001,feature_level_csvs/num_hedges.csv
+num_1st_person_pronouns,#1st person pronouns,argument_only,up,0.0001,feature_level_csvs/num_1st_person_pronouns.csv
+num_1st_person_plural_pronouns,#1st person plural pronoun,argument_only,up,0.0001,feature_level_csvs/num_1st_person_plural_pronouns.csv
+num_dotcom_links,#.com links,argument_only,up,0.0001,feature_level_csvs/num_dotcom_links.csv
+frac_links,frac. links,argument_only,up,0.0001,feature_level_csvs/frac_links.csv
+frac_dotcom_links,frac. .com links,argument_only,up,0.0001,feature_level_csvs/frac_dotcom_links.csv
+num_examples,#examples,argument_only,up,0.05,feature_level_csvs/num_examples.csv
+frac_definite_articles,frac. definite articles,argument_only,up,0.05,feature_level_csvs/frac_definite_articles.csv
+num_question_marks,#question marks,argument_only,up,0.05,feature_level_csvs/num_question_marks.csv
+num_pdf_links,#PDF links,argument_only,up,0.05,feature_level_csvs/num_pdf_links.csv
+frac_positive_words,frac. positive words,argument_only,down,0.05,feature_level_csvs/frac_positive_words.csv
+arousal,arousal,argument_only,down,0.05,feature_level_csvs/arousal.csv
+valence,valence,argument_only,down,0.05,feature_level_csvs/valence.csv
+word_entropy,word entropy,argument_only,up,0.0001,feature_level_csvs/word_entropy.csv
+num_sentences,#sentences,argument_only,up,0.0001,feature_level_csvs/num_sentences.csv
+type_token_ratio,type-token ratio,argument_only,down,0.0001,feature_level_csvs/type_token_ratio.csv
+num_paragraphs,#paragraphs,argument_only,up,0.0001,feature_level_csvs/num_paragraphs.csv
+num_italics,#italics,argument_only,up,0.0001,feature_level_csvs/num_italics.csv
+bullet_list,bullet list,argument_only,up,0.0001,feature_level_csvs/bullet_list.csv
+num_bolds,#bolds,argument_only,up,0.01,feature_level_csvs/num_bolds.csv
+numbered_words,numbered words,argument_only,up,0.05,feature_level_csvs/numbered_words.csv
+frac_italics,frac. italics,argument_only,up,0.05,feature_level_csvs/frac_italics.csv

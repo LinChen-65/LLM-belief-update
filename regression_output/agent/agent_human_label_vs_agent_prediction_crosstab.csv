@@ -1,0 +1,17 @@
+model,human_delta,0,1
+final_v3_results_Pro_MiniMaxAI_MiniMax-M2.5,0,1681,1295
+final_v3_results_Pro_MiniMaxAI_MiniMax-M2.5,1,1292,1685
+final_v3_results_Pro_zai-org_GLM-4.7,0,2180,797
+final_v3_results_Pro_zai-org_GLM-4.7,1,1842,1135
+final_v3_results_Qwen_Qwen2.5-32B-Instruct,0,1441,1536
+final_v3_results_Qwen_Qwen2.5-32B-Instruct,1,1126,1851
+final_v3_results_Qwen_Qwen2.5-72B-Instruct,0,1918,1059
+final_v3_results_Qwen_Qwen2.5-72B-Instruct,1,1606,1371
+final_v3_results_deepseek-ai_DeepSeek-V3,0,1310,1667
+final_v3_results_deepseek-ai_DeepSeek-V3,1,874,2103
+final_v3_results_google_gemini-2.5-flash-lite,0,740,2237
+final_v3_results_google_gemini-2.5-flash-lite,1,476,2501
+final_v3_results_gpt-4o-mini,0,1737,1240
+final_v3_results_gpt-4o-mini,1,1521,1456
+final_v3_results_gpt-5.5,0,1184,1793
+final_v3_results_gpt-5.5,1,683,2294

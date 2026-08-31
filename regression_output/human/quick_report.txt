@@ -1,0 +1,14 @@
+Pairs used: 2977
+Pairs skipped/error: 39
+Features total: 40
+Features measured: 40
+Features unmeasured: 0
+Unmeasured feature names: 
+Direction matched paper among measured: 40/40
+Replicated by Bonferroni threshold and direction among measured: 36/40
+Sentiment source used: vad_polar_threshold_0.333
+VAD scale report: valence_scale=-1_to_1; arousal_scale=-1_to_1; polar_threshold=0.333; unigrams_only=True
+Summary CSV: /Users/claudia/claude-workspace/LLM-belief-update-cmv-public/regression_output/human/root_reply_paired_test_summary.csv
+Wide feature CSV: /Users/claudia/claude-workspace/LLM-belief-update-cmv-public/regression_output/human/root_reply_feature_values_wide.csv
+Human logistic coefficients CSV: /Users/claudia/claude-workspace/LLM-belief-update-cmv-public/regression_output/human/human_logistic_regression_feature_coefficients.csv
+Human logistic fit summary CSV: /Users/claudia/claude-workspace/LLM-belief-update-cmv-public/regression_output/human/human_logistic_regression_fit_summary.csv

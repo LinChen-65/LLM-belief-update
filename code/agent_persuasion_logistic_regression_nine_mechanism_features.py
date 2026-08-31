@@ -1340,7 +1340,7 @@ def main():
     parser.add_argument("--out_dir", default=DEFAULT_OUT_DIR)
     parser.add_argument("--agent_result_paths", nargs="*", default=DEFAULT_AGENT_RESULT_PATHS)
 
-    parser.add_argument("--vad_lexicon", default=None)
+    parser.add_argument("--vad_lexicon", default=os.path.join(DATA, "dataset", "NRC-VAD-Lexicon-v2.1.txt"))
     parser.add_argument("--vad_polar_threshold", type=float, default=0.333)
     parser.add_argument("--sentiment_source", choices=["auto", "liwc", "vad_polar", "fallback"], default="auto")
     parser.add_argument("--stopwords_path", default=None)

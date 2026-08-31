@@ -1,0 +1,2 @@
+regression,n_obs,n_pairs,positive_rate,n_features,log_likelihood,null_log_likelihood,mcfadden_pseudo_r2,aic,bic_llf,lr_statistic_vs_null,lr_df,lr_p_value,accuracy_at_0_5,auc,converged
+human_logistic_regression_clustered_by_pair,5954,2977,0.5,40,-3916.463000142966,-4126.998313053915,0.05101415046500368,7914.926000285932,8189.290560490536,421.0706258218979,40,4.619644425639979e-65,0.6078266711454484,0.648501686143989,True

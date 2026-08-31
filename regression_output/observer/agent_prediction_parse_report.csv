@@ -1,0 +1,9 @@
+model,path,status,n_extracted_predictions,n_unique_pair_condition_predictions,n_unique_reply_id_predictions,n_matched_rows,n_unmatched_rows,agent_positive_rate_in_matched
+deepseek-ai_DeepSeek-V3,/Users/claudia/claude-workspace/LLM-belief-update-cmv-public/data/third_person/final_v3_results_observer_deepseek-ai_DeepSeek-V3.json,ok,6032,6032,0,5954,0,0.4126637554585153
+google_gemini-2.5-flash-lite,/Users/claudia/claude-workspace/LLM-belief-update-cmv-public/data/third_person/final_v3_results_observer_google_gemini-2.5-flash-lite.json,ok,6032,6032,0,5954,0,0.19734632180047026
+gpt-4o-mini,/Users/claudia/claude-workspace/LLM-belief-update-cmv-public/data/third_person/final_v3_results_observer_gpt-4o-mini.json,ok,6032,6032,0,5954,0,0.2413503527040645
+Pro_MiniMaxAI_MiniMax-M2.5,/Users/claudia/claude-workspace/LLM-belief-update-cmv-public/data/third_person/final_v3_results_observer_Pro_MiniMaxAI_MiniMax-M2.5.json,ok,6029,6029,0,5951,3,0.3318769954629474
+Pro_zai-org_GLM-4.7,/Users/claudia/claude-workspace/LLM-belief-update-cmv-public/data/third_person/final_v3_results_observer_Pro_zai-org_GLM-4.7.json,ok,6032,6032,0,5954,0,0.2779643936849177
+Qwen_Qwen2.5-32B-Instruct,/Users/claudia/claude-workspace/LLM-belief-update-cmv-public/data/third_person/final_v3_results_observer_Qwen_Qwen2.5-32B-Instruct.json,ok,6032,6032,0,5954,0,0.26452804837084315
+Qwen_Qwen2.5-72B-Instruct,/Users/claudia/claude-workspace/LLM-belief-update-cmv-public/data/third_person/final_v3_results_observer_Qwen_Qwen2.5-72B-Instruct.json,ok,6032,6032,0,5954,0,0.3473295263688277
+gpt-5.5,/Users/claudia/claude-workspace/LLM-belief-update-cmv-public/data/third_person/final_v3_results_observer_gpt-5.5.json,ok,6032,6032,0,5954,0,0.36664427275780986

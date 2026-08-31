@@ -39,18 +39,25 @@ API-calling scripts read credentials from environment variables (e.g. `SF_API_KE
 
 ## Reproducing the figures and tables
 
-Most figure scripts read `data/` directly and can be run in one step:
+Run everything from the repository root. Figures are written to `figures/`.
+
+Most figures need only one command, for example:
 
 ```bash
-python3 code/<script>.py        # writes figures/<name>.png
+python3 code/plot_anomalies_and_kappa.py      # Figure 1
 ```
 
-Four items depend on regression coefficient tables, so first run the relevant regression script(s) (which write to `regression_output/`), then the plotting/analysis script. Always pass the VAD lexicon:
+Four items (Figures 2, 7, 15 and Table 2) need regression results first, so they take two steps: run the listed regression script(s) once, then run the plotting/analysis script. The regression scripts write their coefficient tables into a `regression_output/` folder that the plotting scripts then read. For example, to make Figure 2:
 
 ```bash
-VAD=data/dataset/NRC-VAD-Lexicon-v2.1.txt
-python3 code/agent_persuasion_logistic_regression_nine_mechanism_features.py --vad_lexicon $VAD
+# step 1: fit the regressions (creates tables under regression_output/)
+python3 code/human_persuasion_logistic_regression_nine_mechanism_features.py
+python3 code/agent_persuasion_logistic_regression_nine_mechanism_features.py
+# step 2: draw the figure
+python3 code/plot_regression_textual_features.py
 ```
+
+In the table below, `A, B → C` means "run scripts A and B first, then C".
 
 ### Figure → code map
 

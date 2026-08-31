@@ -1,0 +1,17 @@
+model,human_delta,0,1
+Pro_MiniMaxAI_MiniMax-M2.5,0,2156,820
+Pro_MiniMaxAI_MiniMax-M2.5,1,1820,1155
+Pro_zai-org_GLM-4.7,0,2315,662
+Pro_zai-org_GLM-4.7,1,1984,993
+Qwen_Qwen2.5-32B-Instruct,0,2291,686
+Qwen_Qwen2.5-32B-Instruct,1,2088,889
+Qwen_Qwen2.5-72B-Instruct,0,2077,900
+Qwen_Qwen2.5-72B-Instruct,1,1809,1168
+deepseek-ai_DeepSeek-V3,0,1981,996
+deepseek-ai_DeepSeek-V3,1,1516,1461
+google_gemini-2.5-flash-lite,0,2480,497
+google_gemini-2.5-flash-lite,1,2299,678
+gpt-4o-mini,0,2355,622
+gpt-4o-mini,1,2162,815
+gpt-5.5,0,2155,822
+gpt-5.5,1,1616,1361

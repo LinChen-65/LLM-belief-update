@@ -1,0 +1,70 @@
+                 Generalized Linear Model Regression Results                  
+==============================================================================
+Dep. Variable:                      y   No. Observations:                47631
+Model:                            GLM   Df Residuals:                    47583
+Model Family:                Binomial   Df Model:                           47
+Link Function:                  Logit   Scale:                          1.0000
+Method:                          IRLS   Log-Likelihood:                -29146.
+Date:                Sun, 30 Aug 2026   Deviance:                       58292.
+Time:                        22:44:46   Pearson chi2:                 4.77e+04
+No. Iterations:                     4   Pseudo R-squ. (CS):             0.1426
+Covariance Type:              cluster                                         
+=======================================================================================================================
+                                                          coef    std err          z      P>|z|      [0.025      0.975]
+-----------------------------------------------------------------------------------------------------------------------
+const                                                   0.0049      0.030      0.161      0.872      -0.055       0.064
+z_reply_frac_in_all                                    -0.2390      0.235     -1.016      0.310      -0.700       0.222
+z_reply_frac_in_content                                 0.0740      0.168      0.442      0.659      -0.254       0.402
+z_op_frac_in_stopwords                                 -0.8044      0.143     -5.612      0.000      -1.085      -0.523
+z_common_in_stopwords                                   0.0008      0.111      0.007      0.994      -0.217       0.219
+z_reply_frac_in_stopwords                              -0.0233      0.115     -0.203      0.839      -0.248       0.202
+z_op_frac_in_all                                        1.1693      0.277      4.223      0.000       0.627       1.712
+z_jaccard_in_content                                    0.0808      0.230      0.352      0.725      -0.369       0.531
+z_jaccard_in_stopwords                                  0.2324      0.149      1.555      0.120      -0.061       0.525
+z_common_in_content                                     0.0408      0.086      0.475      0.635      -0.128       0.209
+z_op_frac_in_content                                   -0.4635      0.213     -2.179      0.029      -0.880      -0.047
+z_jaccard_in_all                                       -0.1606      0.238     -0.676      0.499      -0.626       0.305
+z_num_words                                            -0.0844      0.199     -0.425      0.671      -0.474       0.305
+z_num_definite_articles                                -0.1397      0.064     -2.167      0.030      -0.266      -0.013
+z_num_indefinite_articles                               0.0450      0.043      1.051      0.293      -0.039       0.129
+z_num_positive_words                                    0.1301      0.126      1.037      0.300      -0.116       0.376
+z_num_2nd_person_pronouns                              -0.0318      0.030     -1.067      0.286      -0.090       0.027
+z_num_links                                            -0.0634      0.083     -0.764      0.445      -0.226       0.099
+z_num_negative_words                                   -0.0091      0.056     -0.163      0.871      -0.119       0.101
+z_num_hedges                                            0.0490      0.035      1.387      0.165      -0.020       0.118
+z_num_1st_person_pronouns                               0.0282      0.029      0.957      0.339      -0.030       0.086
+z_num_1st_person_plural_pronouns                       -0.1143      0.024     -4.797      0.000      -0.161      -0.068
+z_num_dotcom_links                                      0.0402      0.058      0.689      0.491      -0.074       0.155
+z_frac_links                                            0.0747      0.050      1.495      0.135      -0.023       0.173
+z_frac_dotcom_links                                     0.0455      0.048      0.956      0.339      -0.048       0.139
+z_num_examples                                          0.0306      0.020      1.493      0.135      -0.010       0.071
+z_frac_definite_articles                                0.0079      0.031      0.252      0.801      -0.054       0.070
+z_num_question_marks                                   -0.0416      0.023     -1.808      0.071      -0.087       0.004
+z_num_pdf_links                                         0.0523      0.026      2.048      0.041       0.002       0.102
+z_frac_positive_words                                  -0.0801      0.043     -1.863      0.062      -0.164       0.004
+z_arousal                                              -0.0003      0.023     -0.012      0.990      -0.046       0.045
+z_valence                                              -0.0216      0.041     -0.527      0.598      -0.102       0.059
+z_word_entropy                                          0.2959      0.085      3.485      0.000       0.129       0.462
+z_num_sentences                                        -0.0375      0.066     -0.568      0.570      -0.167       0.092
+z_type_token_ratio                                     -0.1800      0.038     -4.717      0.000      -0.255      -0.105
+z_num_paragraphs                                       -0.1211      0.033     -3.711      0.000      -0.185      -0.057
+z_num_italics                                           0.0241      0.037      0.656      0.512      -0.048       0.096
+z_bullet_list                                           0.0252      0.021      1.177      0.239      -0.017       0.067
+z_num_bolds                                             0.0050      0.018      0.282      0.778      -0.030       0.040
+z_numbered_words                                        0.0528      0.022      2.421      0.015       0.010       0.096
+z_frac_italics                                          0.0055      0.031      0.174      0.862      -0.056       0.067
+model_final_v3_results_Pro_zai-org_GLM-4.7             -0.7895      0.034    -23.419      0.000      -0.856      -0.723
+model_final_v3_results_Qwen_Qwen2.5-32B-Instruct        0.2952      0.034      8.705      0.000       0.229       0.362
+model_final_v3_results_Qwen_Qwen2.5-72B-Instruct       -0.4021      0.034    -11.796      0.000      -0.469      -0.335
+model_final_v3_results_deepseek-ai_DeepSeek-V3          0.5830      0.032     18.444      0.000       0.521       0.645
+model_final_v3_results_google_gemini-2.5-flash-lite     1.4457      0.040     35.878      0.000       1.367       1.525
+model_final_v3_results_gpt-4o-mini                     -0.2061      0.036     -5.698      0.000      -0.277      -0.135
+model_final_v3_results_gpt-5.5                          0.8364      0.034     24.527      0.000       0.770       0.903
+=======================================================================================================================
+
+Notes:
+- Dependent variable: agent_delta_awarded, where success reply = 1 and failure reply = 0.
+- Features are the same text features used in the original paired feature analysis.
+- Features are z-standardized over all reply-level rows before fitting.
+- Standard errors are clustered by pair_id (using cov_type='cluster').
+- This summary represents the POOLED model WITH model fixed effects to account for multiple agent models.

@@ -1,0 +1,12 @@
+Base reply feature rows: 5954
+Feature extraction errors: 39
+Agent regression rows: 47629
+Features used: 40; excluded feature: common_in_all
+Unmatched agent rows: 3
+Models matched: 8
+Sentiment source used: vad_polar_threshold_0.333
+VAD scale: valence_scale=-1_to_1; arousal_scale=-1_to_1; polar_threshold=0.333; unigrams_only=True
+Coefficient file: /Users/claudia/claude-workspace/LLM-belief-update-cmv-public/regression_output/observer/agent_logistic_regression_coefficients_all.csv
+Fit summary file: /Users/claudia/claude-workspace/LLM-belief-update-cmv-public/regression_output/observer/agent_logistic_regression_fit_summary.csv
+Model summary text file: /Users/claudia/claude-workspace/LLM-belief-update-cmv-public/regression_output/observer/observer_logistic_regression_model_summary.txt
+Regression errors file: /Users/claudia/claude-workspace/LLM-belief-update-cmv-public/regression_output/observer/agent_logistic_regression_errors.csv

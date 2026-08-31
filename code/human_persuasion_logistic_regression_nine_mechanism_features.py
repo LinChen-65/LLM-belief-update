@@ -640,7 +640,7 @@ def main():
     parser.add_argument("--cov_type", choices=["cluster", "HC1", "nonrobust"], default="cluster")
 
     # Compatibility arguments retained from the 40-feature script. They are not used for the nine mechanism features.
-    parser.add_argument("--vad_lexicon", default=None)
+    parser.add_argument("--vad_lexicon", default=os.path.join(DATA, "dataset", "NRC-VAD-Lexicon-v2.1.txt"))
     parser.add_argument("--vad_polar_threshold", type=float, default=0.333)
     parser.add_argument("--sentiment_source", choices=["auto", "liwc", "vad_polar", "fallback"], default="auto")
     parser.add_argument("--positive_words_path", default=None)

@@ -1,0 +1,9 @@
+model,n_obs,positive_rate,n_pairs,human_success_rows,human_success_rate_in_rows
+final_v3_results_Pro_MiniMaxAI_MiniMax-M2.5,5953,0.5005879388543591,2977,2977,0.5000839912649084
+final_v3_results_Pro_zai-org_GLM-4.7,5954,0.3244877393349009,2977,2977,0.5
+final_v3_results_Qwen_Qwen2.5-32B-Instruct,5954,0.5688612697346321,2977,2977,0.5
+final_v3_results_Qwen_Qwen2.5-72B-Instruct,5954,0.4081289889150151,2977,2977,0.5
+final_v3_results_deepseek-ai_DeepSeek-V3,5954,0.6331877729257642,2977,2977,0.5
+final_v3_results_google_gemini-2.5-flash-lite,5954,0.7957675512260665,2977,2977,0.5
+final_v3_results_gpt-4o-mini,5954,0.45280483708431307,2977,2977,0.5
+final_v3_results_gpt-5.5,5954,0.6864292912327847,2977,2977,0.5

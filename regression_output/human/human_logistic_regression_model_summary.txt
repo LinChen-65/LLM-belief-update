@@ -1,0 +1,63 @@
+                 Generalized Linear Model Regression Results                  
+==============================================================================
+Dep. Variable:                      y   No. Observations:                 5954
+Model:                            GLM   Df Residuals:                     5913
+Model Family:                Binomial   Df Model:                           40
+Link Function:                  Logit   Scale:                          1.0000
+Method:                          IRLS   Log-Likelihood:                -3916.5
+Date:                Sun, 30 Aug 2026   Deviance:                       7832.9
+Time:                        22:44:34   Pearson chi2:                 6.05e+03
+No. Iterations:                     4   Pseudo R-squ. (CS):            0.06828
+Covariance Type:              cluster                                         
+====================================================================================================
+                                       coef    std err          z      P>|z|      [0.025      0.975]
+----------------------------------------------------------------------------------------------------
+const                                0.0052      0.009      0.591      0.554      -0.012       0.022
+z_reply_frac_in_all                 -0.1146      0.299     -0.383      0.702      -0.702       0.472
+z_reply_frac_in_content             -0.1207      0.226     -0.533      0.594      -0.564       0.323
+z_op_frac_in_stopwords              -0.2974      0.146     -2.041      0.041      -0.583      -0.012
+z_common_in_stopwords                0.3165      0.118      2.684      0.007       0.085       0.548
+z_reply_frac_in_stopwords           -0.0891      0.137     -0.650      0.516      -0.358       0.180
+z_op_frac_in_all                     0.4070      0.309      1.317      0.188      -0.199       1.013
+z_jaccard_in_content                 0.1398      0.300      0.466      0.641      -0.448       0.727
+z_jaccard_in_stopwords               0.3869      0.166      2.324      0.020       0.061       0.713
+z_common_in_content                 -0.0915      0.077     -1.187      0.235      -0.243       0.060
+z_op_frac_in_content                -0.0892      0.260     -0.344      0.731      -0.598       0.420
+z_jaccard_in_all                    -0.5341      0.292     -1.826      0.068      -1.107       0.039
+z_num_words                         -0.3745      0.244     -1.534      0.125      -0.853       0.104
+z_num_definite_articles              0.0700      0.081      0.869      0.385      -0.088       0.228
+z_num_indefinite_articles            0.0481      0.052      0.925      0.355      -0.054       0.150
+z_num_positive_words                 0.1678      0.159      1.053      0.292      -0.144       0.480
+z_num_2nd_person_pronouns            0.0589      0.032      1.826      0.068      -0.004       0.122
+z_num_links                          0.0157      0.140      0.112      0.911      -0.259       0.290
+z_num_negative_words                 0.0573      0.066      0.875      0.382      -0.071       0.186
+z_num_hedges                        -0.0082      0.047     -0.174      0.862      -0.101       0.085
+z_num_1st_person_pronouns            0.0080      0.032      0.251      0.802      -0.055       0.071
+z_num_1st_person_plural_pronouns     0.0241      0.031      0.779      0.436      -0.037       0.085
+z_num_dotcom_links                  -0.1138      0.090     -1.257      0.209      -0.291       0.064
+z_frac_links                         0.1169      0.084      1.396      0.163      -0.047       0.281
+z_frac_dotcom_links                  0.1018      0.073      1.391      0.164      -0.042       0.245
+z_num_examples                       0.0336      0.028      1.188      0.235      -0.022       0.089
+z_frac_definite_articles             0.0239      0.040      0.601      0.548      -0.054       0.102
+z_num_question_marks                -0.0011      0.032     -0.034      0.973      -0.064       0.061
+z_num_pdf_links                      0.0117      0.033      0.353      0.724      -0.053       0.077
+z_frac_positive_words               -0.1313      0.054     -2.429      0.015      -0.237      -0.025
+z_arousal                           -0.0197      0.025     -0.789      0.430      -0.069       0.029
+z_valence                            0.0900      0.050      1.817      0.069      -0.007       0.187
+z_word_entropy                      -0.0174      0.095     -0.183      0.855      -0.204       0.169
+z_num_sentences                     -0.0661      0.091     -0.723      0.470      -0.245       0.113
+z_type_token_ratio                  -0.0931      0.049     -1.908      0.056      -0.189       0.003
+z_num_paragraphs                    -0.0413      0.044     -0.938      0.348      -0.128       0.045
+z_num_italics                        0.1760      0.060      2.929      0.003       0.058       0.294
+z_bullet_list                        0.0695      0.029      2.431      0.015       0.013       0.125
+z_num_bolds                          0.0614      0.038      1.600      0.110      -0.014       0.137
+z_numbered_words                    -0.0065      0.031     -0.212      0.832      -0.067       0.054
+z_frac_italics                      -0.0548      0.048     -1.143      0.253      -0.149       0.039
+====================================================================================================
+
+Notes:
+- Dependent variable: human_delta, where success reply = 1 and failure reply = 0.
+- Features are the same text features used in the original paired feature analysis.
+- Features are z-standardized over all reply-level rows before fitting.
+- Standard errors are clustered by pair_id by default because each pair contributes one success and one failure reply.
+- There is no model fixed effect or per-model robustness check because the human data form a single source, not seven separate models.

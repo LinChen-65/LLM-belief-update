@@ -1,0 +1,25 @@
+{
+  "op_path": "/Users/claudia/claude-workspace/LLM-belief-update-cmv-public/data/dataset/2262_unique_ops.json",
+  "pair_path": "/Users/claudia/claude-workspace/LLM-belief-update-cmv-public/data/dataset/single_turn_pairs.json",
+  "agent_result_paths": [
+    "/Users/claudia/claude-workspace/LLM-belief-update-cmv-public/data/third_person/final_v3_results_observer_deepseek-ai_DeepSeek-V3.json",
+    "/Users/claudia/claude-workspace/LLM-belief-update-cmv-public/data/third_person/final_v3_results_observer_google_gemini-2.5-flash-lite.json",
+    "/Users/claudia/claude-workspace/LLM-belief-update-cmv-public/data/third_person/final_v3_results_observer_gpt-4o-mini.json",
+    "/Users/claudia/claude-workspace/LLM-belief-update-cmv-public/data/third_person/final_v3_results_observer_Pro_MiniMaxAI_MiniMax-M2.5.json",
+    "/Users/claudia/claude-workspace/LLM-belief-update-cmv-public/data/third_person/final_v3_results_observer_Pro_zai-org_GLM-4.7.json",
+    "/Users/claudia/claude-workspace/LLM-belief-update-cmv-public/data/third_person/final_v3_results_observer_Qwen_Qwen2.5-32B-Instruct.json",
+    "/Users/claudia/claude-workspace/LLM-belief-update-cmv-public/data/third_person/final_v3_results_observer_Qwen_Qwen2.5-72B-Instruct.json",
+    "/Users/claudia/claude-workspace/LLM-belief-update-cmv-public/data/third_person/final_v3_results_observer_gpt-5.5.json"
+  ],
+  "out_dir": "/Users/claudia/claude-workspace/LLM-belief-update-cmv-public/regression_output/observer",
+  "n_base_reply_rows": 5954,
+  "n_agent_regression_rows": 47629,
+  "n_unmatched_agent_rows": 3,
+  "sentiment_source_used": "vad_polar_threshold_0.333",
+  "vad_lexicon_source": "/Users/claudia/claude-workspace/LLM-belief-update-cmv-public/data/dataset/NRC-VAD-Lexicon-v2.1.txt",
+  "vad_scale_report": "valence_scale=-1_to_1; arousal_scale=-1_to_1; polar_threshold=0.333; unigrams_only=True",
+  "cov_type": "cluster",
+  "excluded_feature": "common_in_all",
+  "n_features_after_exclusion": 40,
+  "regression_note": "Observer-result version. Dependent variable is agent_delta_awarded from observer files. Pooled regression includes model fixed effects; per-model regressions are robustness checks. Feature common_in_all is excluded, so regressions use the remaining 40 features."
+}
