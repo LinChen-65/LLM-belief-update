@@ -71,6 +71,5 @@ python3 code/agent_persuasion_logistic_regression_nine_mechanism_features.py --v
 | Fig. 17 (first-person vs observer consistency) | `plot_perspective_consistency.py` |
 | Table 1 (judgment stability across repeated runs) | `compute_stability.py` |
 | Table 2 (full 40 textual features + BH-FDR) | `{human,agent,observer}_persuasion_logistic_regression.py` → `apply_bh_correction_table2.py` |
-| BH-FDR on the nine mechanism features | `{human,agent,observer}_persuasion_logistic_regression_nine_mechanism_features.py` → `apply_bh_correction_nine.py` |
 
 Figs. 10–13 are prompt templates (shown from the judgment/annotation scripts) and have no plotting code.
